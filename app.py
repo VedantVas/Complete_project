@@ -13,17 +13,17 @@ page_bg = """
 <style>
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #E3FDFD, #CBF1F5, #A6E3E9, #71C9CE);
-    color: #1B262C;
+    color: #0A3D62;
 }
-[data-testid="stHeader"] {
-    background: rgba(0,0,0,0);
+h1, h2, h3, h4, h5, h6 {
+    color: #0A3D62 !important;
 }
-h1, h2, h3, h4, h5, h6, p, span, div {
-    color: #1B262C !important;
+p, span, div {
+    color: #102A43 !important;
 }
 .stButton>button {
     background-color: #0F4C75;
-    color: white;
+    color: white !important;
     font-weight: bold;
     border-radius: 10px;
     padding: 0.7em 1.5em;
@@ -51,31 +51,45 @@ h1, h2, h3, h4, h5, h6, p, span, div {
 """
 st.markdown(page_bg, unsafe_allow_html=True)
 
+# -------------------- SESSION STATE --------------------
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
+
 # -------------------- HEADER --------------------
 st.markdown("<h1 style='text-align:center;'>🌐 Vedant’s Smart Hub</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; font-size:18px;'>Your AI Chatbot, Dictionary & News — All in One Place!</p>", unsafe_allow_html=True)
 st.write("")
 
-# -------------------- BUTTON SELECTION --------------------
+# -------------------- NAVIGATION BUTTONS --------------------
 col1, col2, col3 = st.columns(3)
 with col1:
-    chatbot_btn = st.button("🤖 AI Chatbot")
+    if st.button("🤖 AI Chatbot"):
+        st.session_state.page = "chatbot"
 with col2:
-    dictionary_btn = st.button("📖 Dictionary")
+    if st.button("📖 Dictionary"):
+        st.session_state.page = "dictionary"
 with col3:
-    news_btn = st.button("📰 News Reader")
+    if st.button("📰 News Reader"):
+        st.session_state.page = "news"
 
 st.write("---")
 
 # -------------------- CHATBOT SECTION --------------------
-if chatbot_btn:
+if st.session_state.page == "chatbot":
     st.subheader("🤖 AI Chatbot - Ask Anything!")
 
-    api_key = st.text_input("Enter your Gemini API Key (optional):", type="password")
+    st.session_state.api_key = st.text_input(
+        "Enter your Gemini API Key (optional):",
+        type="password",
+        value=st.session_state.api_key
+    )
 
     st.write("Upload a file or image to extract text (optional):")
-    uploaded_file = st.file_uploader("Choose a file (txt, pdf, docx, jpg, png)", 
-                                     type=["txt", "pdf", "docx", "jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Choose a file (txt, pdf, docx, jpg, png)",
+                                     type=["txt", "pdf", "docx", "jpg", "jpeg", "png"],
+                                     key="file_uploader_chatbot")
 
     extracted_text = ""
     if uploaded_file:
@@ -96,13 +110,15 @@ if chatbot_btn:
 
     user_question = st.text_input("💬 Ask me anything:")
     if user_question:
-        st.info("💡 (Demo Mode) You asked: " + user_question)
-        st.success("🤖 Response: This is a sample AI response. Connect your Gemini API key to enable real answers.")
+        st.info("💡 You asked: " + user_question)
+        if st.session_state.api_key:
+            st.success("🔑 API Key added — Ready to connect with Gemini (feature coming soon!)")
+        st.success("🤖 Response: This is a sample AI response. Connect Gemini API to enable real answers.")
 
 # -------------------- DICTIONARY SECTION --------------------
-elif dictionary_btn:
+elif st.session_state.page == "dictionary":
     st.subheader("📖 Dictionary App")
-    word = st.text_input("🔍 Enter a word:", "").strip()
+    word = st.text_input("🔍 Enter a word:", "", key="word_input").strip()
 
     if word:
         url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
@@ -151,9 +167,9 @@ elif dictionary_btn:
             st.error("❌ Word not found. Try another one.")
 
 # -------------------- NEWS READER SECTION --------------------
-elif news_btn:
+elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
-    API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"  # Your News API Key
+    API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"
     BASE_URL = "https://newsapi.org/v2/top-headlines"
 
     categories = ["Technology", "Sports", "Business", "Entertainment", "Health", "Science"]
@@ -193,7 +209,7 @@ elif news_btn:
                     f"""
                     <div style='background:white; padding:15px; border-radius:12px; box-shadow:0px 4px 8px rgba(0,0,0,0.1); margin:10px 0;'>
                         <h4 style='color:#0F4C75;'>{article['title']}</h4>
-                        <p>{article.get('description','No description available.')}</p>
+                        <p style='color:#102A43;'>{article.get('description','No description available.')}</p>
                         <a href='{article['url']}' target='_blank'>Read more 🔗</a>
                     </div>
                     """,
