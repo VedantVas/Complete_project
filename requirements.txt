@@ -1,0 +1,9 @@
+streamlit
+requests
+pillow
+pytesseract
+python-docx
+PyMuPDF
+langchain
+langchain-google-genai
+langchain-community
