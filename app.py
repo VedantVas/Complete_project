@@ -21,6 +21,8 @@ h1, h2, h3, h4, h5, h6 {
 p, span, div {
     color: #102A43 !important;
 }
+
+/* Buttons */
 .stButton>button {
     background-color: #0F4C75;
     color: white !important;
@@ -32,6 +34,25 @@ p, span, div {
 .stButton>button:hover {
     background-color: #3282B8;
 }
+
+/* Input and Select Box Styling */
+.stTextInput > div > div > input,
+.stSelectbox > div > div > select {
+    background-color: #0F4C75 !important;
+    color: #FFFFFF !important;
+    border-radius: 10px;
+    border: 2px solid #1B6B93;
+    font-weight: bold;
+}
+.stTextInput > div > div > input::placeholder {
+    color: #E3FDFD !important;
+}
+.stSelectbox > div > div > select option {
+    background-color: #0F4C75;
+    color: #FFFFFF;
+}
+
+/* Follow buttons */
 .follow-btn {
     background-color: #0F4C75;
     color: #FFFFFF !important;
@@ -49,6 +70,7 @@ p, span, div {
 }
 </style>
 """
+
 st.markdown(page_bg, unsafe_allow_html=True)
 
 # -------------------- SESSION STATE --------------------
