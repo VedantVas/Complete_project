@@ -6,7 +6,7 @@ import docx
 import fitz  # PyMuPDF
 
 # -------------------- PAGE CONFIG --------------------
-st.set_page_config(page_title="🌐 Vedant's Smart Hub", layout="wide")
+st.set_page_config(page_title="🌐Welcome to Auralis", layout="wide")
 
 # -------------------- CUSTOM CSS (improved selectors) --------------------
 page_bg = """
