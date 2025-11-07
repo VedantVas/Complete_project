@@ -11,10 +11,9 @@ st.set_page_config(page_title="🌐 Vedant's Smart Hub", layout="wide")
 # -------------------- CUSTOM CSS (improved selectors) --------------------
 page_bg = """
 <style>
-/* App background and primary text */
+/* Background */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #E3FDFD, #CBF1F5, #A6E3E9, #71C9CE);
-    color: #0A3D62;
 }
 
 /* Headings */
@@ -22,15 +21,15 @@ h1, h2, h3, h4, h5, h6 {
     color: #0A3D62 !important;
 }
 
-/* General body text fallback */
+/* Normal text */
 p, span, div {
-    color: #102A43 !important;
+    color: #0F172A !important;
 }
 
 /* Buttons */
 .stButton>button {
     background-color: #0F4C75;
-    color: white !important;
+    color: #FFFFFF !important;
     font-weight: bold;
     border-radius: 10px;
     padding: 0.7em 1.5em;
@@ -38,6 +37,51 @@ p, span, div {
 }
 .stButton>button:hover {
     background-color: #3282B8;
+}
+
+/* Input and Dropdown Fields */
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea,
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    background-color: #0F4C75 !important;
+    color: #FFFFFF !important;
+    border-radius: 10px !important;
+    border: 2px solid #1B6B93 !important;
+    font-weight: bold;
+}
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder {
+    color: #E3FDFD !important;
+}
+
+/* Dropdown text color */
+[data-baseweb="select"] span {
+    color: #FFFFFF !important;
+}
+
+/* News Cards — now light for better text visibility */
+.news-card {
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+    padding: 16px;
+    margin: 10px 0px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 14px rgba(0,0,0,0.18);
+}
+.news-card h4 {
+    color: #0F4C75 !important;
+    font-weight: bold;
+}
+.news-card p {
+    color: #1E293B !important;
+}
+.news-card a {
+    color: #3282B8 !important;
+    font-weight: 700;
+    text-decoration: none;
+}
+.news-card a:hover {
+    text-decoration: underline;
 }
 
 /* Follow buttons */
@@ -56,91 +100,9 @@ p, span, div {
     background-color: #3282B8;
     color: #FFFFFF !important;
 }
-
-/* Strong targeting for Streamlit input/select elements so they are visible on gradient */
-
-/* text inputs (search boxes etc.) */
-[data-testid="stTextInput"] input,
-[data-testid="stTextArea"] textarea,
-input[type="text"],
-input[type="password"],
-div[role="combobox"] > input {
-    background-color: #0F4C75 !important;
-    color: #FFFFFF !important;
-    border-radius: 10px !important;
-    border: 2px solid #1B6B93 !important;
-    padding: 8px !important;
-    font-weight: 600 !important;
-}
-
-/* select / dropdown boxes */
-[data-testid="stSelectbox"] select,
-select,
-div[role="listbox"] select {
-    background-color: #0F4C75 !important;
-    color: #FFFFFF !important;
-    border-radius: 10px !important;
-    border: 2px solid #1B6B93 !important;
-    padding: 6px 8px !important;
-    font-weight: 600 !important;
-}
-
-/* placeholder color for inputs */
-[data-testid="stTextInput"] input::placeholder,
-input::placeholder,
-[data-testid="stTextArea"] textarea::placeholder {
-    color: rgba(255,255,255,0.8) !important;
-}
-
-/* Select options color */
-[data-testid="stSelectbox"] option,
-select option {
-    background-color: #0F4C75 !important;
-    color: #FFFFFF !important;
-}
-
-/* When components are focused */
-[data-testid="stTextInput"] input:focus,
-[data-testid="stTextArea"] textarea:focus,
-[data-testid="stSelectbox"] select:focus,
-input:focus,
-select:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 3px rgba(50,130,184,0.15) !important;
-}
-
-/* News card dark theme for better contrast */
-.news-card {
-    background-color: #0F4C75;
-    color: #FFFFFF;
-    padding: 16px;
-    margin: 10px 0px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 14px rgba(0,0,0,0.18);
-}
-.news-card h4 {
-    color: #E3FDFD;
-    margin: 0 0 6px 0;
-}
-.news-card p {
-    color: #EAF6F9;
-    margin: 0 0 8px 0;
-}
-.news-card a {
-    color: #A6E3E9;
-    font-weight: 700;
-    text-decoration: none;
-}
-.news-card a:hover {
-    text-decoration: underline;
-}
-
-/* Make sidebar components (if any) readable */
-[data-testid="stSidebar"] {
-    color: #FFFFFF !important;
-}
 </style>
 """
+
 st.markdown(page_bg, unsafe_allow_html=True)
 
 # -------------------- SESSION STATE --------------------
