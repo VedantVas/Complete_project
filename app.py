@@ -112,7 +112,7 @@ if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 # -------------------- HEADER --------------------
-st.markdown("<h1 style='text-align:center;'>🌐 Vedant’s Smart Hub</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>🌐 Auralis</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; font-size:18px;'>Your AI Chatbot, Dictionary & News — All in One Place!</p>", unsafe_allow_html=True)
 st.write("")
 
