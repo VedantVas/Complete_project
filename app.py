@@ -1,9 +1,36 @@
 import streamlit as st
 import requests
-from PIL import Image
-import pytesseract
-import docx
-import fitz  # PyMuPDF
+import os
+
+# -------------------- Optional Imports --------------------
+# We wrap optional imports in try/except blocks.
+# This way, the app can still run if an optional library is missing,
+# and we can show a helpful error message to the user instead.
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    PYTESSERACT_AVAILABLE = True
+except ImportError:
+    PYTESSERACT_AVAILABLE = False
+
+try:
+    import docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="🌐Welcome to Auralis", layout="wide")
@@ -29,7 +56,7 @@ p, span, div {
 /* Buttons */
 .stButton>button {
     background-color: #0F4C75;
-    color: #FFFFFF !important;
+    /* color: #FFFFFF !important; <-- REMOVED this line */
     font-weight: bold;
     border-radius: 10px;
     padding: 0.7em 1.5em;
@@ -38,6 +65,14 @@ p, span, div {
 .stButton>button:hover {
     background-color: #3282B8;
 }
+
+/* ADDED: Specific rule for button text */
+.stButton>button p,
+.stButton>button span,
+.stButton>button div {
+    color: #FFFFFF !important;
+}
+
 
 /* Input and Dropdown Fields */
 [data-testid="stTextInput"] input,
@@ -108,8 +143,10 @@ st.markdown(page_bg, unsafe_allow_html=True)
 # -------------------- SESSION STATE --------------------
 if "page" not in st.session_state:
     st.session_state.page = "home"
-if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
+if "gemini_api_key" not in st.session_state:
+    st.session_state.gemini_api_key = ""
+if "news_api_key" not in st.session_state:
+    st.session_state.news_api_key = ""
 
 # -------------------- HEADER --------------------
 st.markdown("<h1 style='text-align:center;'>🌐 Auralis</h1>", unsafe_allow_html=True)
@@ -134,14 +171,28 @@ st.write("---")
 if st.session_state.page == "chatbot":
     st.subheader("🤖 AI Chatbot - Ask Anything!")
 
-    st.session_state.api_key = st.text_input(
-        "Enter your Gemini API Key (optional):",
+    if not GEMINI_AVAILABLE:
+        st.error("The 'google-generativeai' library is not installed. Please install it to use the chatbot: `pip install google-generativeai`")
+    
+    st.session_state.gemini_api_key = st.text_input(
+        "Enter your Gemini API Key:",
         type="password",
-        value=st.session_state.api_key,
+        value=st.session_state.gemini_api_key,
         key="gemini_api_key_input"
     )
 
+    st.markdown("---")
     st.write("Upload a file or image to extract text (optional):")
+    
+    if not PYTESSERACT_AVAILABLE:
+         st.warning("To extract text from images, please install 'pytesseract' and 'Pillow': `pip install pytesseract Pillow`")
+    if not DOCX_AVAILABLE:
+        st.warning("To extract text from .docx files, please install 'python-docx': `pip install python-docx`")
+    if not PYMUPDF_AVAILABLE:
+        st.warning("To extract text from .pdf files, please install 'PyMuPDF': `pip install PyMuPDF`")
+
+    st.info("ℹ️ **Note for Image OCR:** Using `pytesseract` also requires installing Google's Tesseract-OCR engine on your system (not just the Python library).")
+
     uploaded_file = st.file_uploader("Choose a file (txt, pdf, docx, jpg, png)", 
                                      type=["txt", "pdf", "docx", "jpg", "jpeg", "png"],
                                      key="file_uploader_chatbot")
@@ -151,27 +202,49 @@ if st.session_state.page == "chatbot":
         try:
             if uploaded_file.name.endswith(".txt"):
                 extracted_text = uploaded_file.read().decode("utf-8")
-            elif uploaded_file.name.endswith(".docx"):
+            elif uploaded_file.name.endswith(".docx") and DOCX_AVAILABLE:
                 doc = docx.Document(uploaded_file)
                 extracted_text = "\n".join([p.text for p in doc.paragraphs])
-            elif uploaded_file.name.endswith(".pdf"):
+            elif uploaded_file.name.endswith(".pdf") and PYMUPDF_AVAILABLE:
                 pdf = fitz.open(stream=uploaded_file.read(), filetype="pdf")
                 for page in pdf:
                     extracted_text += page.get_text()
-            elif uploaded_file.type.startswith("image/"):
+                pdf.close()
+            elif uploaded_file.type.startswith("image/") and PYTESSERACT_AVAILABLE:
                 image = Image.open(uploaded_file)
                 extracted_text = pytesseract.image_to_string(image)
         except Exception as e:
-            st.error("Error extracting text: " + str(e))
+            st.error(f"Error extracting text: {e}")
 
-        st.text_area("📄 Extracted Text:", extracted_text, height=200)
+        if extracted_text:
+            st.text_area("📄 Extracted Text:", extracted_text, height=200)
 
+    st.markdown("---")
     user_question = st.text_input("💬 Ask me anything:", key="chat_user_question")
-    if user_question:
-        st.info("💡 You asked: " + user_question)
-        if st.session_state.api_key:
-            st.success("🔑 API Key added — Ready to connect with Gemini (feature coming soon!)")
-        st.success("🤖 Response: This is a sample AI response. Connect Gemini API to enable real answers.")
+    
+    if st.button("Ask Auralis", type="primary"):
+        if not st.session_state.gemini_api_key:
+            st.error("Please enter your Gemini API Key above to use the chatbot.")
+        elif not user_question:
+            st.warning("Please enter a question.")
+        elif not GEMINI_AVAILABLE:
+            st.error("Cannot connect to chatbot. The 'google-generativeai' library is missing.")
+        else:
+            try:
+                genai.configure(api_key=st.session_state.gemini_api_key)
+                model = genai.GenerativeModel('gemini-pro')
+                
+                # Build the prompt
+                prompt = user_question
+                if extracted_text:
+                    prompt = f"Using the following context, answer the user's question.\n\nContext:\n---\n{extracted_text}\n---\n\nQuestion: {user_question}"
+                
+                with st.spinner("🤖 Auralis is thinking..."):
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+                    
+            except Exception as e:
+                st.error(f"An error occurred while connecting to Gemini: {e}")
 
 # -------------------- DICTIONARY SECTION --------------------
 elif st.session_state.page == "dictionary":
@@ -224,22 +297,29 @@ elif st.session_state.page == "dictionary":
             else:
                 st.error("❌ Word not found. Try another one.")
         except Exception as e:
-            st.error("Error contacting dictionary API: " + str(e))
+            st.error(f"Error contacting dictionary API: {e}")
 
 # -------------------- NEWS READER SECTION --------------------
 elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
-    API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"
+    
+    # --- FIXED: Removed hardcoded API key, now uses session state ---
+    st.session_state.news_api_key = st.text_input(
+        "Enter your NewsAPI.org Key:", 
+        type="password", 
+        value=st.session_state.news_api_key, 
+        key="news_api_key_input"
+    )
+
     BASE_URL = "https://newsapi.org/v2/top-headlines"
 
-    # Use explicit keys so the inputs keep their values without resetting
     categories = ["Technology", "Sports", "Business", "Entertainment", "Health", "Science"]
     selected_category = st.selectbox("📂 Choose Category", categories, key="news_category_select")
     search_query = st.text_input("🔍 Or search for a topic:", key="news_search_input")
 
-    def fetch_news(category=None, query=None):
+    def fetch_news(api_key, category=None, query=None):
         params = {
-            "apiKey": API_KEY,
+            "apiKey": api_key,
             "language": "en",
             "pageSize": 8
         }
@@ -250,22 +330,32 @@ elif st.session_state.page == "news":
             else:
                 params["category"] = category.lower()
                 url = BASE_URL
+            
             r = requests.get(url, params=params, timeout=10)
+            
             if r.status_code == 200:
                 return r.json().get("articles", [])
+            elif r.status_code == 401:
+                st.error("⚠ Failed to fetch news. Your NewsAPI Key is invalid or has expired.")
+                return []
             else:
-                st.error("⚠ Failed to fetch news. Check API key or quota.")
+                st.error(f"⚠ Failed to fetch news. Status code: {r.status_code}. Message: {r.json().get('message', 'No message')}")
                 return []
         except Exception as e:
-            st.error("⚠ Error fetching news: " + str(e))
+            st.error(f"⚠ Error fetching news: {e}")
             return []
 
-    if search_query:
-        articles = fetch_news(query=search_query)
-        st.subheader(f"🔍 Results for '{search_query}'")
+    articles = []
+    # Only fetch news if the API key is provided
+    if st.session_state.news_api_key:
+        if search_query:
+            articles = fetch_news(st.session_state.news_api_key, query=search_query)
+            st.subheader(f"🔍 Results for '{search_query}'")
+        else:
+            articles = fetch_news(st.session_state.news_api_key, category=selected_category)
+            st.subheader(f"📂 Top {selected_category} News")
     else:
-        articles = fetch_news(category=selected_category)
-        st.subheader(f"📂 Top {selected_category} News")
+        st.info("Please enter your NewsAPI.org key above to fetch the latest news.")
 
     if articles:
         for article in articles:
@@ -283,7 +373,7 @@ elif st.session_state.page == "news":
                     """,
                     unsafe_allow_html=True
                 )
-    else:
+    elif st.session_state.news_api_key: # Only show this if they've entered a key but got no results
         st.info("No news found. Try another search or category.")
 
 # -------------------- FOOTER --------------------
