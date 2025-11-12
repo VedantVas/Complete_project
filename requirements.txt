@@ -1,9 +1,7 @@
 streamlit
 requests
-pillow
+Pillow
 pytesseract
 python-docx
 PyMuPDF
-langchain
-langchain-google-genai
-langchain-community
+google-generativeai
