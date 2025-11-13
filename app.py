@@ -65,7 +65,7 @@ p, span, div {
     background-color: #3282B8;
 }
 
-/* ADDED: Specific rule for button text */
+/* Specific rule for button text */
 .stButton>button p,
 .stButton>button span,
 .stButton>button div {
@@ -89,9 +89,19 @@ p, span, div {
 }
 
 /* Dropdown text color */
-[data-baseweb="select"] span {
+[data-baseweb="select"] span,
+/* ADDED: Rule for dropdown options when expanded */
+[data-baseweb="select"] li span {
     color: #FFFFFF !important;
 }
+
+/* Also ensure the background of the expanded dropdown is appropriate */
+[data-baseweb="select"] ul {
+    background-color: #0F4C75 !important; /* Keep consistent with input backgrounds */
+    border-radius: 10px;
+    border: 2px solid #1B6B93 !important;
+}
+
 
 /* News Cards — now light for better text visibility */
 .news-card {
