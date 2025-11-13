@@ -56,7 +56,6 @@ p, span, div {
 /* Buttons */
 .stButton>button {
     background-color: #0F4C75;
-    /* color: #FFFFFF !important; <-- REMOVED this line */
     font-weight: bold;
     border-radius: 10px;
     padding: 0.7em 1.5em;
@@ -303,13 +302,17 @@ elif st.session_state.page == "dictionary":
 elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
     
-    # --- FIXED: Removed hardcoded API key, now uses session state ---
-    st.session_state.news_api_key = st.text_input(
-        "Enter your NewsAPI.org Key:", 
-        type="password", 
-        value=st.session_state.news_api_key, 
-        key="news_api_key_input"
-    )
+    # ==================================================================
+    # 👇 PASTE YOUR API KEY BELOW
+    # ==================================================================
+    # Replace the text inside the quotes with your actual NewsAPI key.
+    # Example: api_key_backend = "abc1234567890xyz"
+    
+    api_key_backend = "246661c7ea0d4f5b9b7c0a277e5e57aa" 
+
+    # Setting the session state automatically so the user isn't asked
+    st.session_state.news_api_key = api_key_backend
+    # ==================================================================
 
     BASE_URL = "https://newsapi.org/v2/top-headlines"
 
@@ -346,8 +349,8 @@ elif st.session_state.page == "news":
             return []
 
     articles = []
-    # Only fetch news if the API key is provided
-    if st.session_state.news_api_key:
+    # Only fetch news if the API key is provided (and not the placeholder)
+    if st.session_state.news_api_key and st.session_state.news_api_key != "PASTE_YOUR_NEWS_API_KEY_HERE":
         if search_query:
             articles = fetch_news(st.session_state.news_api_key, query=search_query)
             st.subheader(f"🔍 Results for '{search_query}'")
@@ -355,7 +358,7 @@ elif st.session_state.page == "news":
             articles = fetch_news(st.session_state.news_api_key, category=selected_category)
             st.subheader(f"📂 Top {selected_category} News")
     else:
-        st.info("Please enter your NewsAPI.org key above to fetch the latest news.")
+        st.info("⚠️ **Action Required:** Open `app.py` and paste your NewsAPI key in the `api_key_backend` variable to see the news.")
 
     if articles:
         for article in articles:
@@ -373,7 +376,7 @@ elif st.session_state.page == "news":
                     """,
                     unsafe_allow_html=True
                 )
-    elif st.session_state.news_api_key: # Only show this if they've entered a key but got no results
+    elif st.session_state.news_api_key and st.session_state.news_api_key != "PASTE_YOUR_NEWS_API_KEY_HERE":
         st.info("No news found. Try another search or category.")
 
 # -------------------- FOOTER --------------------
