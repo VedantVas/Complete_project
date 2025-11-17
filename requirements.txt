@@ -1,7 +1,8 @@
 streamlit
 requests
-Pillow
+pillow
 pytesseract
 python-docx
 PyMuPDF
 google-generativeai
+streamlit-lottie
