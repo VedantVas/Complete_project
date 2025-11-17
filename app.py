@@ -2,11 +2,7 @@ import streamlit as st
 import requests
 import os
 
-# -------------------- Optional Imports --------------------
-# We wrap optional imports in try/except blocks.
-# This way, the app can still run if an optional library is missing,
-# and we can show a helpful error message to the user instead.
-
+# Optional imports
 try:
     import google.generativeai as genai
     GEMINI_AVAILABLE = True
@@ -32,122 +28,129 @@ try:
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
+# Lottie animation loader
+from streamlit_lottie import st_lottie
+
+def load_lottie(url: str):
+    r = requests.get(url)
+    if r.status_code == 200:
+        return r.json()
+    return None
+
 # -------------------- PAGE CONFIG --------------------
-st.set_page_config(page_title="🌐Welcome to Auralis", layout="wide")
+st.set_page_config(page_title="Auralis | Nano-Core Intelligence System", layout="wide")
 
-# -------------------- CUSTOM CSS (improved selectors) --------------------
-page_bg = """
+# -------------------- Fonts & Theme CSS (Iron Man HUD) --------------------
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-/* Background */
+
+/* Global Font */
+html, body, [class*="css"] {
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* Background Nano-Tech Space */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #E3FDFD, #CBF1F5, #A6E3E9, #71C9CE);
+    background: radial-gradient(circle at 25% 25%, #003445 0%, #00121A 80%);
+    background-attachment: fixed;
 }
 
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-    color: #0A3D62 !important;
+/* Grid Overlay */
+[data-testid="stAppViewContainer"]::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+        linear-gradient(#00eaff1B 1px, transparent 1px),
+        linear-gradient(90deg, #00eaff1B 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+    pointer-events: none;
 }
 
-/* Normal text */
-p, span, div {
-    color: #0F172A !important;
+/* Scanline Effect */
+[data-testid="stAppViewContainer"]::after {
+    content: "";
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 255, 255, 0.05),
+        rgba(0, 255, 255, 0.05) 2px,
+        transparent 2px,
+        transparent 4px
+    );
+    opacity: .14;
+}
+
+/* Titles */
+.hud-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 40px;
+    text-align: center;
+    color: #00eaff;
+    text-shadow: 0px 0px 25px #00eaff;
+}
+
+/* Sub Glowing Text */
+.holo-text { color: #C7F9FF; opacity: 0.9; }
+
+/* Animated Scan Divider */
+.holo-divider {
+    width: 90%;
+    height: 2px;
+    margin: auto;
+    background: radial-gradient(circle, #00eaff 0%, transparent 75%);
+    animation: pulse 2s infinite alternate;
+}
+@keyframes pulse { from {opacity:.4} to {opacity:1} }
+
+/* Holographic Card */
+.holo-card {
+    border: 1px solid #00eaff88;
+    border-radius: 16px;
+    padding: 22px;
+    background: rgba(0, 60, 75, 0.35);
+    backdrop-filter: blur(8px);
+    color: #d3faff;
+    text-align: center;
+    box-shadow: 0 0 12px #00eaff40 inset;
 }
 
 /* Buttons */
 .stButton>button {
-    background-color: #0F4C75;
-    font-weight: bold;
-    border-radius: 10px;
-    padding: 0.7em 1.5em;
-    border: none;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00eaffaa;
+    color: #00eaff;
+    font-weight: 600;
+    padding: 0.6em 1.4em;
+    border-radius: 40px;
+    letter-spacing: 1px;
+    transition: 0.25s;
+    backdrop-filter: blur(4px);
 }
 .stButton>button:hover {
-    background-color: #3282B8;
+    box-shadow: 0 0 15px #00eaff;
+    transform: scale(1.06);
 }
 
-/* Specific rule for button text */
-.stButton>button p,
-.stButton>button span,
-.stButton>button div {
-    color: #FFFFFF !important;
+/* Typewriter Nano-Text */
+.typewriter {
+    border-right: 3px solid #00eaff;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+    animation: typing 3.2s steps(40, end) forwards, blink 0.8s infinite;
 }
+@keyframes typing { from {width: 0;} to {width: 100%;} }
+@keyframes blink { 50% { border-color: transparent; } }
 
-
-/* Input and Dropdown Fields */
-[data-testid="stTextInput"] input,
-[data-testid="stTextArea"] textarea,
-[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background-color: #0F4C75 !important;
-    color: #FFFFFF !important;
-    border-radius: 10px !important;
-    border: 2px solid #1B6B93 !important;
-    font-weight: bold;
-}
-[data-testid="stTextInput"] input::placeholder,
-[data-testid="stTextArea"] textarea::placeholder {
-    color: #E3FDFD !important;
-}
-
-/* Dropdown text color */
-[data-baseweb="select"] span,
-/* ADDED: Rule for dropdown options when expanded */
-[data-baseweb="select"] li span {
-    color: #FFFFFF !important;
-}
-
-/* Also ensure the background of the expanded dropdown is appropriate */
-[data-baseweb="select"] ul {
-    background-color: #0F4C75 !important; /* Keep consistent with input backgrounds */
-    border-radius: 10px;
-    border: 2px solid #1B6B93 !important;
-}
-
-
-/* News Cards — now light for better text visibility */
-.news-card {
-    background-color: #FFFFFF !important;
-    color: #0F172A !important;
-    padding: 16px;
-    margin: 10px 0px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 14px rgba(0,0,0,0.18);
-}
-.news-card h4 {
-    color: #0F4C75 !important;
-    font-weight: bold;
-}
-.news-card p {
-    color: #1E293B !important;
-}
-.news-card a {
-    color: #3282B8 !important;
-    font-weight: 700;
-    text-decoration: none;
-}
-.news-card a:hover {
-    text-decoration: underline;
-}
-
-/* Follow buttons */
-.follow-btn {
-    background-color: #0F4C75;
-    color: #FFFFFF !important;
-    border-radius: 8px;
-    padding: 0.5em 1em;
-    text-align: center;
-    font-weight: bold;
-    width: 100%;
-    display: inline-block;
-    text-decoration: none;
-}
-.follow-btn:hover {
-    background-color: #3282B8;
-    color: #FFFFFF !important;
-}
 </style>
-"""
-
-st.markdown(page_bg, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # -------------------- SESSION STATE --------------------
 if "page" not in st.session_state:
@@ -157,13 +160,11 @@ if "gemini_api_key" not in st.session_state:
 if "news_api_key" not in st.session_state:
     st.session_state.news_api_key = ""
 
-# -------------------- HEADER --------------------
-st.markdown("<h1 style='text-align:center;'>🌐 Auralis</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; font-size:18px;'>Your AI Chatbot, Dictionary & News — All in One Place!</p>", unsafe_allow_html=True)
-st.write("")
+# -------------------- NAVIGATION --------------------
+st.markdown("<h1 class='hud-title'>AURALIS — NANO CORE INTELLIGENCE</h1>", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
-# -------------------- NAVIGATION BUTTONS --------------------
-col1, col2, col3 = st.columns([1,1,1])
+col1, col2, col3, col4 = st.columns([1,1,1,1])
 with col1:
     if st.button("🤖 AI Chatbot"):
         st.session_state.page = "chatbot"
@@ -173,228 +174,148 @@ with col2:
 with col3:
     if st.button("📰 News Reader"):
         st.session_state.page = "news"
+with col4:
+    if st.button("ℹ About"):
+        st.session_state.page = "about"
 
-st.write("---")
+st.markdown("<div class='holo-divider'></div><br>", unsafe_allow_html=True)
 
-# -------------------- CHATBOT SECTION --------------------
-if st.session_state.page == "chatbot":
-    st.subheader("🤖 AI Chatbot - Ask Anything!")
+# -------------------- HOME PAGE (HUD) --------------------
+if st.session_state.page == "home":
+    orb_anim = load_lottie("https://lottie.host/94fea69e-0b69-45e1-99f4-83175f6634d6/HOlNQ7so6j.json")
+    st_lottie(orb_anim, height=230, key="hud_orb", speed=1.15)
+    
+    st.markdown("""
+        <div class="holo-card">
+            <h3 style="color:#00eaff;">BLEEDING-EDGE NANO AI SYSTEM</h3>
+            <p class="typewriter">Adaptive • Cognitive • Neural • Context-Aware Intelligence Channel Activated...</p>
+        </div>
+        <br>
+        <div class="holo-divider"></div>
+    """, unsafe_allow_html=True)
+
+
+# -------------------- AI CHATBOT PAGE --------------------
+elif st.session_state.page == "chatbot":
+    st.subheader("🤖 Nano-Core AI Assistant")
 
     if not GEMINI_AVAILABLE:
-        st.error("The 'google-generativeai' library is not installed. Please install it to use the chatbot: `pip install google-generativeai`")
-    
-    st.session_state.gemini_api_key = st.text_input(
-        "Enter your Gemini API Key:",
-        type="password",
-        value=st.session_state.gemini_api_key,
-        key="gemini_api_key_input"
-    )
+        st.error("Install google-generativeai: pip install google-generativeai")
 
-    st.markdown("---")
-    st.write("Upload a file or image to extract text (optional):")
-    
-    if not PYTESSERACT_AVAILABLE:
-         st.warning("To extract text from images, please install 'pytesseract' and 'Pillow': `pip install pytesseract Pillow`")
-    if not DOCX_AVAILABLE:
-        st.warning("To extract text from .docx files, please install 'python-docx': `pip install python-docx`")
-    if not PYMUPDF_AVAILABLE:
-        st.warning("To extract text from .pdf files, please install 'PyMuPDF': `pip install PyMuPDF`")
+    st.session_state.gemini_api_key = st.text_input("Enter Gemini API Key", type="password")
 
-    st.info("ℹ️ **Note for Image OCR:** Using `pytesseract` also requires installing Google's Tesseract-OCR engine on your system (not just the Python library).")
-
-    uploaded_file = st.file_uploader("Choose a file (txt, pdf, docx, jpg, png)", 
-                                     type=["txt", "pdf", "docx", "jpg", "jpeg", "png"],
-                                     key="file_uploader_chatbot")
-
+    uploaded_file = st.file_uploader("Upload txt/pdf/docx/image (optional)", type=["txt", "pdf", "docx", "jpg", "jpeg", "png"])
     extracted_text = ""
+
     if uploaded_file:
         try:
             if uploaded_file.name.endswith(".txt"):
                 extracted_text = uploaded_file.read().decode("utf-8")
             elif uploaded_file.name.endswith(".docx") and DOCX_AVAILABLE:
-                doc = docx.Document(uploaded_file)
-                extracted_text = "\n".join([p.text for p in doc.paragraphs])
+                extracted_text = "\n".join([p.text for p in docx.Document(uploaded_file).paragraphs])
             elif uploaded_file.name.endswith(".pdf") and PYMUPDF_AVAILABLE:
                 pdf = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                for page in pdf:
-                    extracted_text += page.get_text()
-                pdf.close()
+                extracted_text = "".join([page.get_text() for page in pdf])
             elif uploaded_file.type.startswith("image/") and PYTESSERACT_AVAILABLE:
-                image = Image.open(uploaded_file)
-                extracted_text = pytesseract.image_to_string(image)
-        except Exception as e:
-            st.error(f"Error extracting text: {e}")
+                extracted_text = pytesseract.image_to_string(Image.open(uploaded_file))
+        except:
+            st.error("File extraction error")
 
         if extracted_text:
-            st.text_area("📄 Extracted Text:", extracted_text, height=200)
+            st.text_area("Extracted Text:", extracted_text, height=200)
 
-    st.markdown("---")
-    user_question = st.text_input("💬 Ask me anything:", key="chat_user_question")
-    
-    if st.button("Ask Auralis", type="primary"):
+    query = st.text_input("Ask your question:")
+
+    if st.button("ENGAGE AI"):
         if not st.session_state.gemini_api_key:
-            st.error("Please enter your Gemini API Key above to use the chatbot.")
-        elif not user_question:
-            st.warning("Please enter a question.")
-        elif not GEMINI_AVAILABLE:
-            st.error("Cannot connect to chatbot. The 'google-generativeai' library is missing.")
+            st.error("API key missing")
+        elif not query:
+            st.error("Enter query")
         else:
             try:
                 genai.configure(api_key=st.session_state.gemini_api_key)
-                model = genai.GenerativeModel('gemini-pro')
-                
-                # Build the prompt
-                prompt = user_question
-                if extracted_text:
-                    prompt = f"Using the following context, answer the user's question.\n\nContext:\n---\n{extracted_text}\n---\n\nQuestion: {user_question}"
-                
-                with st.spinner("🤖 Auralis is thinking..."):
-                    response = model.generate_content(prompt)
-                    st.markdown(response.text)
-                    
-            except Exception as e:
-                st.error(f"An error occurred while connecting to Gemini: {e}")
+                model = genai.GenerativeModel("gemini-pro")
 
-# -------------------- DICTIONARY SECTION --------------------
+                prompt = query if not extracted_text else f"Use context:\n{extracted_text}\n\nQuestion:{query}"
+
+                with st.spinner("Processing like FRIDAY..."):
+                    response = model.generate_content(prompt)
+                    st.success("Response:")
+                    st.markdown(response.text)
+            except Exception as e:
+                st.error(f"AI Error: {e}")
+
+
+# -------------------- DICTIONARY PAGE --------------------
 elif st.session_state.page == "dictionary":
-    st.subheader("📖 Dictionary App")
-    word = st.text_input("🔍 Enter a word:", "", key="word_input").strip()
+    st.subheader("📖 HUD Dictionary")
+    word = st.text_input("Enter a word:")
 
     if word:
-        try:
-            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()[0]
-                word_text = data["word"].capitalize()
-                pronunciation = "N/A"
-                audio_link = None
-                phonetics = data.get("phonetics", [])
-                for p in phonetics:
-                    if "text" in p and pronunciation == "N/A":
-                        pronunciation = p["text"]
-                    if "audio" in p and p["audio"]:
-                        audio_link = p["audio"]
-                        break
+        api = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+        r = requests.get(api)
 
-                st.markdown(f"<h2 style='color:#0F4C75;'>📌 {word_text}</h2>", unsafe_allow_html=True)
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.info(f"🔊 Pronunciation: `{pronunciation}`")
-                with col2:
-                    if audio_link:
-                        st.audio(audio_link, format="audio/mp3")
-
-                meanings = data["meanings"]
-                main_def = meanings[0]["definitions"][0]["definition"]
-                example = meanings[0]["definitions"][0].get("example")
-
-                st.success(f"💡 {main_def}")
-                if example:
-                    st.markdown(f"<p><b>✏️ Example:</b> {example}</p>", unsafe_allow_html=True)
-                else:
-                    st.info("No example available for this word.")
-
-                with st.expander("📚 Show more meanings"):
-                    for meaning in meanings:
-                        part_of_speech = meaning["partOfSpeech"].capitalize()
-                        st.markdown(f"<h4 style='color:#0F4C75;'>➡️ {part_of_speech}</h4>", unsafe_allow_html=True)
-                        for idx, definition in enumerate(meaning["definitions"][:3], start=1):
-                            st.write(f"{idx}. {definition['definition']}")
-                            if "example" in definition:
-                                st.markdown(f"<p>✏️ {definition['example']}</p>", unsafe_allow_html=True)
-            else:
-                st.error("❌ Word not found. Try another one.")
-        except Exception as e:
-            st.error(f"Error contacting dictionary API: {e}")
-
-# -------------------- NEWS READER SECTION --------------------
-elif st.session_state.page == "news":
-    st.subheader("📰 News Reader")
-    
-    # ==================================================================
-    # 👇 PASTE YOUR API KEY BELOW
-    # ==================================================================
-    # Replace the text inside the quotes with your actual NewsAPI key.
-    # Example: api_key_backend = "abc1234567890xyz"
-    
-    api_key_backend = "246661c7ea0d4f5b9b7c0a277e5e57aa" 
-
-    # Setting the session state automatically so the user isn't asked
-    st.session_state.news_api_key = api_key_backend
-    # ==================================================================
-
-    BASE_URL = "https://newsapi.org/v2/top-headlines"
-
-    categories = ["Technology", "Sports", "Business", "Entertainment", "Health", "Science"]
-    selected_category = st.selectbox("📂 Choose Category", categories, key="news_category_select")
-    search_query = st.text_input("🔍 Or search for a topic:", key="news_search_input")
-
-    def fetch_news(api_key, category=None, query=None):
-        params = {
-            "apiKey": api_key,
-            "language": "en",
-            "pageSize": 8
-        }
-        try:
-            if query:
-                params["q"] = query
-                url = "https://newsapi.org/v2/everything"
-            else:
-                params["category"] = category.lower()
-                url = BASE_URL
-            
-            r = requests.get(url, params=params, timeout=10)
-            
-            if r.status_code == 200:
-                return r.json().get("articles", [])
-            elif r.status_code == 401:
-                st.error("⚠ Failed to fetch news. Your NewsAPI Key is invalid or has expired.")
-                return []
-            else:
-                st.error(f"⚠ Failed to fetch news. Status code: {r.status_code}. Message: {r.json().get('message', 'No message')}")
-                return []
-        except Exception as e:
-            st.error(f"⚠ Error fetching news: {e}")
-            return []
-
-    articles = []
-    # Only fetch news if the API key is provided (and not the placeholder)
-    if st.session_state.news_api_key and st.session_state.news_api_key != "PASTE_YOUR_NEWS_API_KEY_HERE":
-        if search_query:
-            articles = fetch_news(st.session_state.news_api_key, query=search_query)
-            st.subheader(f"🔍 Results for '{search_query}'")
+        if r.status_code == 200:
+            data = r.json()[0]
+            st.success(data["meanings"][0]["definitions"][0]["definition"])
         else:
-            articles = fetch_news(st.session_state.news_api_key, category=selected_category)
-            st.subheader(f"📂 Top {selected_category} News")
-    else:
-        st.info("⚠️ **Action Required:** Open `app.py` and paste your NewsAPI key in the `api_key_backend` variable to see the news.")
+            st.error("Word not found")
 
-    if articles:
-        for article in articles:
-            title = article.get("title", "No title")
-            desc = article.get("description", "No description available.")
-            url = article.get("url", "#")
-            with st.container():
-                st.markdown(
-                    f"""
-                    <div class="news-card">
-                        <h4>{title}</h4>
-                        <p>{desc}</p>
-                        <a href="{url}" target="_blank">Read more 🔗</a>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-    elif st.session_state.news_api_key and st.session_state.news_api_key != "PASTE_YOUR_NEWS_API_KEY_HERE":
-        st.info("No news found. Try another search or category.")
+
+# -------------------- NEWS READER PAGE --------------------
+elif st.session_state.page == "news":
+    st.subheader("📰 Global Intelligence Channel")
+
+    st.session_state.news_api_key = st.text_input("Enter NewsAPI Key", type="password")
+    categories = ["Technology", "Sports", "Business", "Entertainment", "Health", "Science"]
+    selected_category = st.selectbox("Select Category", categories)
+    topic = st.text_input("Search Topic (optional)")
+
+    def pull_news(api, cat=None, q=None):
+        params = {"apiKey": api, "language": "en", "pageSize": 8}
+        url = "https://newsapi.org/v2/everything" if q else "https://newsapi.org/v2/top-headlines"
+        if q: params["q"] = q
+        else: params["category"] = cat.lower()
+        return requests.get(url, params=params).json().get("articles", [])
+
+    if st.session_state.news_api_key:
+        articles = pull_news(st.session_state.news_api_key, selected_category, topic)
+        for a in articles:
+            st.markdown(f"""
+                <div class="holo-card">
+                    <h4 style="color:#00eaff;">{a.get("title")}</h4>
+                    <p class="holo-text">{a.get("description","No description")}</p>
+                    <a href="{a.get("url")}" target="_blank" style="color:#00eaff;">READ →</a>
+                </div><br>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("Enter API key to load live intelligence feed.")
+
+
+# -------------------- ABOUT PAGE --------------------
+elif st.session_state.page == "about":
+    st.subheader("🧬 Project Information")
+
+    st.markdown("""
+    ### 👨‍💻 Developed By:
+    | Name | Role |
+    |------|------------------------------|
+    | **Vedant Vashishtha** | Lead Dev & UI Architect |
+    | **Raj Vishwakarma** | AI & Integration Specialist |
+    | **Abhay Rajak** | Research Analyst |
+
+    ### 🔭 Vision
+    To build an all-in-one smart cognitive platform powered by AI and futuristic interface systems.
+
+    ### 🧩 Tech Stack
+    - Python  
+    - Streamlit  
+    - Google Gemini AI  
+    - NewsAPI  
+    - DictionaryAPI  
+    - OCR: Tesseract / PyMuPDF / Docx  
+    """)
 
 # -------------------- FOOTER --------------------
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; font-size:16px;'>Made with ❤️ by Vedant Vashishtha</p>", unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("<a href='https://www.linkedin.com/in/vedant-vashishtha-4933b3301/' target='_blank' class='follow-btn'>🔗 LinkedIn</a>", unsafe_allow_html=True)
-with col2:
-    st.markdown("<a href='https://github.com/VedantVas' target='_blank' class='follow-btn'>💻 GitHub</a>", unsafe_allow_html=True)
+st.markdown("<br><div class='holo-divider'></div>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#00eaff;'>🌀 Auralis Nano-Core | Powered by Stark-Grade Intelligence 🌀</p>", unsafe_allow_html=True)
