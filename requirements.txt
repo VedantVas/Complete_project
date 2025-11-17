@@ -6,3 +6,4 @@ python-docx
 PyMuPDF
 google-generativeai
 streamlit-lottie
+
