@@ -173,7 +173,6 @@ elif st.session_state.page == "chatbot":
             try:
                 genai.configure(api_key=st.session_state.gemini_api_key)
                 model = genai.GenerativeModel("gemini-pro")
-
                 prompt = question if not extracted_text else f"Use context:\n{extracted_text}\n\nQ:{question}"
                 response = model.generate_content(prompt)
                 st.success(response.text)
@@ -215,7 +214,6 @@ elif st.session_state.page == "dictionary":
                     if audio_link:
                         st.audio(audio_link, format="audio/mp3")
 
-                # Primary Meaning
                 meanings = data["meanings"]
                 main_def = meanings[0]["definitions"][0]["definition"]
                 example = meanings[0]["definitions"][0].get("example")
@@ -227,7 +225,6 @@ elif st.session_state.page == "dictionary":
                 else:
                     st.info("No example available.")
 
-                # Expand: More Meanings
                 with st.expander("📚 Show more meanings"):
                     for meaning in meanings:
                         part_speech = meaning["partOfSpeech"].capitalize()
@@ -241,36 +238,80 @@ elif st.session_state.page == "dictionary":
         except Exception as e:
             st.error(f"⚠ Error: {e}")
 
-# -------------------- NEWS SECTION --------------------
+# -------------------- NEWS SECTION (ORIGINAL RESTORED) --------------------
 elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
-    st.session_state.news_api_key = st.text_input("Enter NewsAPI Key", type="password")
 
-    categories = ["Technology","Sports","Business","Entertainment","Health","Science"]
-    category = st.selectbox("Category", categories)
-    search = st.text_input("Search topic (optional)")
+    st.session_state.news_api_key = st.text_input(
+        "Enter your NewsAPI.org Key:", 
+        type="password", 
+        value=st.session_state.news_api_key, 
+        key="news_api_key_input"
+    )
 
-    def fetch(api, category=None, query=None):
-        params = {"apiKey": api, "language": "en", "pageSize": 8}
-        url = "https://newsapi.org/v2/everything" if query else "https://newsapi.org/v2/top-headlines"
-        if query:
-            params["q"] = query
-        else:
-            params["category"] = category.lower()
-        return requests.get(url, params=params).json().get("articles", [])
+    BASE_URL = "https://newsapi.org/v2/top-headlines"
 
+    categories = ["Technology", "Sports", "Business", "Entertainment", "Health", "Science"]
+    selected_category = st.selectbox("📂 Choose Category", categories, key="news_category_select")
+    search_query = st.text_input("🔍 Or search for a topic:", key="news_search_input")
+
+    def fetch_news(api_key, category=None, query=None):
+        params = {
+            "apiKey": api_key,
+            "language": "en",
+            "pageSize": 8
+        }
+        try:
+            if query:
+                params["q"] = query
+                url = "https://newsapi.org/v2/everything"
+            else:
+                params["category"] = category.lower()
+                url = BASE_URL
+            
+            r = requests.get(url, params=params, timeout=10)
+            
+            if r.status_code == 200:
+                return r.json().get("articles", [])
+            elif r.status_code == 401:
+                st.error("⚠ Failed to fetch news. Your NewsAPI Key is invalid or has expired.")
+                return []
+            else:
+                st.error(f"⚠ Failed to fetch news. Status code: {r.status_code}. Message: {r.json().get('message', 'No message')}")
+                return []
+        except Exception as e:
+            st.error(f"⚠ Error fetching news: {e}")
+            return []
+
+    articles = []
     if st.session_state.news_api_key:
-        articles = fetch(st.session_state.news_api_key, category, search)
-        for a in articles:
-            st.markdown(f"""
-                <div class="news-card">
-                    <h4>{a.get("title")}</h4>
-                    <p>{a.get("description")}</p>
-                    <a href="{a.get("url")}" target="_blank">Read more</a>
-                </div>
-            """, unsafe_allow_html=True)
+        if search_query:
+            articles = fetch_news(st.session_state.news_api_key, query=search_query)
+            st.subheader(f"🔍 Results for '{search_query}'")
+        else:
+            articles = fetch_news(st.session_state.news_api_key, category=selected_category)
+            st.subheader(f"📂 Top {selected_category} News")
     else:
-        st.info("Enter API Key")
+        st.info("Please enter your NewsAPI.org key above to fetch the latest news.")
+
+    if articles:
+        for article in articles:
+            title = article.get("title", "No title")
+            desc = article.get("description", "No description available.")
+            url = article.get("url", "#")
+            with st.container():
+                st.markdown(
+                    f"""
+                    <div class="news-card">
+                        <h4>{title}</h4>
+                        <p>{desc}</p>
+                        <a href="{url}" target="_blank">Read more 🔗</a>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+    elif st.session_state.news_api_key:
+        st.info("No news found. Try another search or category.")
 
 # -------------------- ABOUT SECTION --------------------
 elif st.session_state.page == "about":
@@ -278,16 +319,16 @@ elif st.session_state.page == "about":
 
     st.markdown("""
     ### 🚀 Project Overview  
-    **Auralis** is a unified, smart productivity and learning platform designed to provide  
-    **AI Chat, Live Dictionary & Real-Time News** in a single seamless dashboard.
+    **Auralis** is a unified, smart productivity and learning application combining  
+    **AI Chat, Live Dictionary & Real-Time News** in one seamless interface.
 
-    ### 🛠️ Tech Stack  
+    ### 🛠️ Built Using  
     - Python  
-    - Streamlit (Frontend UI)  
-    - Google Gemini API (Chatbot)  
-    - DictionaryAPI.dev (Dictionary)  
-    - NewsAPI.org (News)  
-    - Optional Text Extraction using OCR  
+    - Streamlit  
+    - Google Gemini API  
+    - Dictionary API  
+    - NewsAPI  
+    - Optional OCR Processing  
 
     ### 👨‍💻 Development Team  
     - **Vedant Vashishtha**  
@@ -295,13 +336,13 @@ elif st.session_state.page == "about":
     - **Abhay Rajak**
 
     ### 🎯 Objective  
-    To reduce digital switching and provide fast access to essential information utilities.
+    To reduce dependency on multiple apps and enhance user productivity and learning ability.
 
     ### 🌱 Future Enhancements  
-    - Voice assistant support  
-    - Saved chat & search history  
-    - Multilingual support  
-    - Mobile application version  
+    - Voice-controlled assistant  
+    - Saved search & chat history  
+    - Multilingual mode  
+    - Mobile application support  
     """)
 
 # -------------------- FOOTER --------------------
