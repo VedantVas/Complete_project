@@ -210,7 +210,7 @@ elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
 
     # 🔑 Your hardcoded NewsAPI key
-    NEWS_API_KEY = "YOUR_NEWS_API_KEY_HERE"   # <--- Replace here
+    NEWS_API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"   # <--- Replace here
 
     if not NEWS_API_KEY or NEWS_API_KEY.strip() == "":
         st.error("❌ No API key inserted in code.")
