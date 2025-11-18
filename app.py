@@ -32,23 +32,32 @@ except ImportError:
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(page_title="🌐Welcome to Auralis", layout="wide")
 
-# -------------------- SIMPLE UI THEME --------------------
+# -------------------- CUSTOM CSS THEME --------------------
 page_bg = """
 <style>
+/* Page Background Gradient */
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #E3FDFD, #CBF1F5, #A6E3E9, #71C9CE);
 }
+
+/* Headings */
 h1, h2, h3, h4, h5, h6 { color: #0A3D62 !important; }
+
+/* Text */
 p, span, div { color: #0F172A !important; }
+
+/* Buttons */
 .stButton>button {
     background-color: #0F4C75;
-    font-weight: bold;
     border-radius: 10px;
     padding: 0.7em 1.5em;
+    font-weight: bold;
     border: none;
 }
 .stButton>button:hover { background-color: #3282B8; }
 .stButton>button * { color: #FFFFFF !important; }
+
+/* Input & text areas */
 [data-testid="stTextInput"] input,
 [data-testid="stTextArea"] textarea,
 [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
@@ -59,9 +68,9 @@ p, span, div { color: #0F172A !important; }
     font-weight: bold;
 }
 [data-testid="stTextInput"] input::placeholder,
-[data-testid="stTextArea"] textarea::placeholder {
-    color: #E3FDFD !important;
-}
+[data-testid="stTextArea"] textarea::placeholder { color: #E3FDFD !important; }
+
+/* NEWS CARD */
 .news-card {
     background-color: white;
     padding: 15px;
@@ -76,9 +85,28 @@ p, span, div { color: #0F172A !important; }
     text-decoration: none;
 }
 .news-card a:hover { text-decoration: underline; }
+
+/* -------- FILE UPLOADER FIX -------- */
+[data-testid="stFileUploader"] section {
+    background-color: #FFFFFF !important;
+    border: 2px solid #0F4C75 !important;
+    border-radius: 10px !important;
+    color: #0F172A !important;
+}
+[data-testid="stFileUploader"] div,
+[data-testid="stFileUploader"] label {
+    color: #0F172A !important;
+}
+[data-testid="stFileUploader"] section:hover {
+    border-color: #3282B8 !important;
+    background-color: #F5FBFF !important;
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.12);
+}
+
 </style>
 """
 st.markdown(page_bg, unsafe_allow_html=True)
+
 
 # -------------------- SESSION --------------------
 if "page" not in st.session_state:
@@ -89,7 +117,7 @@ st.markdown("<h1 style='text-align:center;'>🌐 Auralis</h1>", unsafe_allow_htm
 st.markdown("<p style='text-align:center;'>Your AI Chatbot, Dictionary & News — All in One Place!</p>", unsafe_allow_html=True)
 st.write("")
 
-# -------------------- NAV BAR --------------------
+# -------------------- NAVIGATION --------------------
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     if st.button("🤖 AI Chatbot"): st.session_state.page = "chatbot"
@@ -107,17 +135,16 @@ if st.session_state.page == "home":
     st.subheader("✨ Welcome to Auralis")
     st.write("Your smart multi-utility platform for AI chat, dictionary, and news — all combined in one place.")
 
+
 # -------------------- CHATBOT --------------------
 elif st.session_state.page == "chatbot":
     st.subheader("🤖 AI Chatbot")
 
     if not GEMINI_AVAILABLE:
-        st.error("Please install: pip install google-generativeai")
+        st.error("Please install using: pip install google-generativeai")
 
-    # API key input
     gemini_key = st.text_input("Enter Gemini API Key", type="password")
 
-    # Optional file
     uploaded = st.file_uploader("Upload text, PDF, DOCX, or image", type=["txt","pdf","docx","jpg","jpeg","png"])
     extracted = ""
 
@@ -133,33 +160,31 @@ elif st.session_state.page == "chatbot":
             elif uploaded.type.startswith("image/") and PYTESSERACT_AVAILABLE:
                 extracted = pytesseract.image_to_string(Image.open(uploaded))
         except:
-            st.error("Error reading file")
-
+            st.error("Error extracting content")
         if extracted.strip():
-            st.text_area("Extracted Text:", extracted, height=200)
+            st.text_area("Extracted Text", extracted, height=200)
 
-    user_query = st.text_input("Ask your question:")
+    user_query = st.text_input("Ask anything:")
 
     if st.button("ASK"):
         if not gemini_key:
-            st.error("Missing API key.")
+            st.error("Missing API key")
         elif not user_query:
-            st.warning("Ask something first.")
+            st.warning("Ask a question")
         else:
             try:
                 genai.configure(api_key=gemini_key)
                 model = genai.GenerativeModel("gemini-pro")
-
                 prompt = user_query if not extracted else f"Use this context:\n{extracted}\n\nQ:{user_query}"
                 reply = model.generate_content(prompt)
                 st.success(reply.text)
             except:
-                st.error("Failed to connect to Gemini API.")
+                st.error("Gemini API Error")
 
-# -------------------- DICTIONARY (FULL) --------------------
+
+# -------------------- DICTIONARY --------------------
 elif st.session_state.page == "dictionary":
     st.subheader("📖 Dictionary")
-
     word = st.text_input("Enter word:").strip()
 
     if word:
@@ -167,101 +192,96 @@ elif st.session_state.page == "dictionary":
             r = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}")
             if r.status_code == 200:
                 data = r.json()[0]
-                # Phonetics
+
                 pronunciation, audio = "N/A", None
-                for item in data.get("phonetics", []):
-                    if "text" in item and pronunciation == "N/A":
-                        pronunciation = item["text"]
-                    if "audio" in item and item["audio"]:
-                        audio = item["audio"]
+                for ph in data.get("phonetics", []):
+                    if "text" in ph and pronunciation == "N/A":
+                        pronunciation = ph["text"]
+                    if "audio" in ph and ph["audio"]:
+                        audio = ph["audio"]
                         break
 
                 st.markdown(f"### 📌 {data['word'].capitalize()}")
                 colA, colB = st.columns([2,1])
-                with colA:
-                    st.info(f"🔊 Pronunciation: {pronunciation}")
+                with colA: st.info(f"🔊 Pronunciation: {pronunciation}")
                 with colB:
-                    if audio:
-                        st.audio(audio)
+                    if audio: st.audio(audio)
 
-                # Main meaning
                 main_meaning = data["meanings"][0]["definitions"][0]["definition"]
                 st.success(main_meaning)
 
                 example = data["meanings"][0]["definitions"][0].get("example")
-                if example:
-                    st.write(f"✏️ *{example}*")
+                if example: st.write(f"✏️ *{example}*")
 
-                # Expand meanings
                 with st.expander("More meanings"):
-                    for meaning in data["meanings"]:
-                        st.write(f"**{meaning['partOfSpeech']}**:")
-                        for i, d in enumerate(meaning["definitions"][:3], start=1):
+                    for m in data["meanings"]:
+                        st.write(f"**{m['partOfSpeech']}**:")
+                        for i, d in enumerate(m["definitions"][:3], start=1):
                             st.write(f"{i}. {d['definition']}")
                             if "example" in d:
                                 st.write(f"   *{d['example']}*")
             else:
-                st.error("Word not found.")
+                st.error("No meaning found")
         except:
-            st.error("API not reachable.")
+            st.error("Dictionary API not reachable")
 
-# -------------------- NEWS READER (HARDCODED KEY) --------------------
+
+# -------------------- NEWS (HARDCODED KEY) --------------------
 elif st.session_state.page == "news":
     st.subheader("📰 News Reader")
 
-    # 🔑 Your hardcoded NewsAPI key
-    NEWS_API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"   # <--- Replace here
+    NEWS_API_KEY = "246661c7ea0d4f5b9b7c0a277e5e57aa"  # <-- Replace here
 
-    if not NEWS_API_KEY or NEWS_API_KEY.strip() == "":
-        st.error("❌ No API key inserted in code.")
+    if not NEWS_API_KEY:
+        st.error("❌ Please add API key inside app.py")
     else:
         categories = ["Technology","Sports","Business","Entertainment","Health","Science"]
-        selected_category = st.selectbox("Choose Category", categories)
-        query = st.text_input("Search topic (optional)")
+        cat = st.selectbox("Choose Category", categories)
+        search = st.text_input("Search topic (optional)")
 
-        def fetch(api_key, category=None, query=None):
-            params={"apiKey": api_key,"language":"en","pageSize":8}
-            url="https://newsapi.org/v2/everything" if query else "https://newsapi.org/v2/top-headlines"
-            if query: params["q"] = query
-            else: params["category"] = category.lower()
+        def fetch(key, cat=None, q=None):
+            params = {"apiKey": key, "language": "en", "pageSize": 8}
+            url = "https://newsapi.org/v2/everything" if q else "https://newsapi.org/v2/top-headlines"
+            if q: params["q"] = q
+            else: params["category"] = cat.lower()
             return requests.get(url, params=params).json().get("articles",[])
 
-        articles = fetch(NEWS_API_KEY, selected_category, query)
+        articles = fetch(NEWS_API_KEY, cat, search)
 
         if articles:
             for a in articles:
-                st.markdown(
-                    f"""
-                    <div class="news-card">
-                        <h4>{a.get("title")}</h4>
-                        <p>{a.get("description")}</p>
-                        <a href="{a.get("url")}" target="_blank">Read more</a>
-                    </div>
-                    """, unsafe_allow_html=True
-                )
+                st.markdown(f"""
+                <div class="news-card">
+                    <h4>{a.get("title")}</h4>
+                    <p>{a.get("description")}</p>
+                    <a href="{a.get("url")}" target="_blank">Read more</a>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.warning("No articles found.")
+            st.warning("No articles found")
+
 
 # -------------------- ABOUT --------------------
 elif st.session_state.page == "about":
     st.subheader("ℹ️ About Auralis")
-
     st.markdown("""
-    ### 🚀 Project Overview  
-    Auralis is an integrated digital assistant offering **AI Chat**, **Dictionary**, and **Live News**
-    inside a single smart web application.
+    ### 🚀 Overview  
+    Auralis unifies **AI Chat**, **Dictionary**, and **Live News** in one smart platform.
 
-    ### 👨‍💻 Developed By  
+    ### 👨‍💻 Developers  
     - **Vedant Vashishtha**  
     - **Raj Vishwakarma**  
     - **Abhay Rajak**
 
-    ### 🎯 Objective  
-    Reduce app switching, boost productivity, simplify learning.
+    ### 🎯 Purpose  
+    Reduce digital switching & improve learning and productivity.
 
-    ### 🛠 Tech Used  
-    Python | Streamlit | Gemini AI | NewsAPI | DictionaryAPI | OCR Support
+    ### 🧩 Future Upgrades  
+    - Voice mode  
+    - Saved dictionary history  
+    - User login system  
     """)
+
 
 # -------------------- FOOTER --------------------
 st.write("---")
